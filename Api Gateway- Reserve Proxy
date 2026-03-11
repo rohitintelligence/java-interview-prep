@@ -1,0 +1,382 @@
+Malaik, let’s treat this the way it actually comes up in interviews. Interviewers don’t want textbook definitions. They want to know how it fits into a real microservice system like the one you described.
+
+You already have the right mental model:
+multiple services, different DBs, some async processing, modules talking to each other.
+
+Now let’s connect API Gateway + Reverse Proxy to that world.
+
+
+---
+
+1. First understand the problem they solve
+
+Imagine your system has these services:
+
+User Service
+Order Service
+Payment Service
+Metadata Service
+Notification Service
+
+Each service runs independently.
+
+Example URLs:
+
+http://user-service:8081
+http://order-service:8082
+http://payment-service:8083
+
+Now imagine a frontend calling them.
+
+Without any gateway:
+
+Frontend → user-service
+Frontend → order-service
+Frontend → payment-service
+Frontend → metadata-service
+
+Problems appear quickly:
+
+• frontend needs to know all service URLs
+• security must be added to every service
+• rate limiting everywhere
+• logging everywhere
+• versioning becomes messy
+
+So companies add one entry point.
+
+Client
+  ↓
+API Gateway
+  ↓
+Microservices
+
+That’s the main idea.
+
+
+---
+
+2. What is an API Gateway
+
+Simple definition:
+
+API Gateway is the single entry point for all client requests in a microservice system.
+
+It sits in front of services and routes requests.
+
+Client
+   ↓
+API Gateway
+   ↓
+User Service
+Order Service
+Payment Service
+
+Example request:
+
+GET /users/123
+
+Gateway routes it to:
+
+user-service
+
+Another request:
+
+POST /orders
+
+Gateway routes it to:
+
+order-service
+
+
+---
+
+3. What an API Gateway actually does
+
+This is what interviewers expect.
+
+1 Routing
+
+/users → user-service
+/orders → order-service
+/payments → payment-service
+
+
+---
+
+2 Authentication
+
+Instead of every service validating tokens:
+
+Gateway validates JWT
+↓
+Forward request to service
+
+Services trust the gateway.
+
+
+---
+
+3 Rate limiting
+
+Example:
+
+max 100 requests per second per user
+
+Gateway blocks excess traffic.
+
+
+---
+
+4 Request aggregation
+
+Example:
+
+Frontend needs:
+
+user profile
+orders
+payments
+
+Instead of 3 calls:
+
+frontend → gateway
+gateway → user service
+gateway → order service
+gateway → payment service
+
+Gateway combines response.
+
+
+---
+
+5 Logging & monitoring
+
+Centralized place for:
+
+request logs
+metrics
+tracing
+
+
+---
+
+4. Real tools used as API Gateway
+
+In Spring ecosystem:
+
+• Spring Cloud Gateway
+• Netflix Zuul (older)
+
+Industry tools:
+
+• AWS API Gateway
+• Kong
+• NGINX
+• Traefik
+
+
+---
+
+5. Now what is a Reverse Proxy
+
+This is where many developers get confused.
+
+A reverse proxy is a server that sits in front of backend servers and forwards client requests to them.
+
+Example:
+
+Client
+   ↓
+NGINX (reverse proxy)
+   ↓
+Backend servers
+
+Example routing:
+
+/api → backend1
+/images → backend2
+/videos → backend3
+
+Clients never talk directly to backend servers.
+
+They only talk to the proxy.
+
+
+---
+
+6. Difference between Forward Proxy vs Reverse Proxy
+
+Just so you're clear.
+
+Forward proxy:
+
+Client → Proxy → Internet
+
+Example:
+
+Corporate internet proxy.
+
+
+---
+
+Reverse proxy:
+
+Client → Proxy → Backend Servers
+
+Example:
+
+NGINX in front of microservices.
+
+
+---
+
+7. Relationship between API Gateway and Reverse Proxy
+
+Here’s the key insight.
+
+API Gateway is basically a specialized reverse proxy for APIs.
+
+Reverse proxy features:
+
+• routing
+• load balancing
+• SSL termination
+
+API gateway adds:
+
+• authentication
+• rate limiting
+• API management
+• request transformation
+• analytics
+
+So:
+
+Reverse Proxy  → traffic router
+API Gateway    → smart router for APIs
+
+
+---
+
+8. Example architecture (similar to what you described)
+
+Let’s say your metadata system works like this.
+
+Client
+   ↓
+API Gateway
+   ↓
+Ingestion Service
+   ↓
+SQS
+   ↓
+Processing Service A
+   ↓
+Database
+   ↓
+Processing Service B
+
+Gateway handles:
+
+POST /metadata
+
+Routes to:
+
+metadata-ingestion-service
+
+Then ingestion service pushes message to:
+
+SQS
+
+Then:
+
+processor A
+processor B
+
+Work asynchronously.
+
+
+---
+
+9. How to answer in an interview (simple)
+
+If interviewer asks:
+
+What is API Gateway?
+
+Answer:
+
+> API Gateway acts as a single entry point for all client requests in a microservices architecture. Instead of clients calling multiple services directly, they call the gateway. The gateway handles routing, authentication, rate limiting, and monitoring before forwarding requests to the appropriate microservice.
+
+
+
+
+---
+
+If they ask:
+
+What is reverse proxy?
+
+Answer:
+
+> A reverse proxy sits in front of backend servers and forwards client requests to them. Clients never communicate directly with backend services. It helps with load balancing, security, and hiding internal service architecture.
+
+
+
+
+---
+
+10. If they ask difference
+
+You say:
+
+> A reverse proxy mainly handles traffic routing and load balancing. An API Gateway is built on top of the reverse proxy concept but adds API-specific features like authentication, rate limiting, request transformation, and API monitoring.
+
+
+
+
+---
+
+11. One senior-level insight (interview gold)
+
+Many real systems use both.
+
+Example:
+
+Client
+  ↓
+Cloudflare
+  ↓
+NGINX (reverse proxy)
+  ↓
+API Gateway
+  ↓
+Microservices
+
+Each layer adds control.
+
+
+---
+
+12. One question interviewers LOVE to ask
+
+Why not call microservices directly?
+
+Answer:
+
+• security centralized
+• clients don’t need service discovery
+• easier API versioning
+• rate limiting
+• monitoring
+
+
+---
+
+If you want, I can also explain something very important for senior interviews:
+
+Service Mesh vs API Gateway vs Load Balancer
+
+Many developers with 4–5 years experience get stuck there.
+Once you understand that, your microservice architecture answers become extremely strong.
