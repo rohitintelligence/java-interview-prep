@@ -1,0 +1,309 @@
+
+---
+
+1. Start with a simple project introduction
+
+Say something like this:
+
+In my current project we built backend services for Samsung’s content delivery platform used by Smart TVs. The system ingests metadata for Live TV channels and Video on Demand assets from multiple providers and processes it through an event driven pipeline before storing it in internal databases and content systems.
+
+The architecture is based on microservices built using Spring Boot and FastAPI, and we use AWS services like SQS, SNS, and Lambda to build asynchronous processing pipelines for large scale metadata ingestion.
+---
+
+2. Explain the actual request flow
+
+Now explain step by step.
+
+Step 1 – Content provider sends metadata
+
+Example:
+
+POST /content/metadata
+
+This metadata contains things like:
+
+movie id
+
+title
+
+language
+
+availability window
+
+streaming URL
+
+
+
+---
+
+Step 2 – API layer (Spring Boot / FastAPI)
+
+The request first hits our backend API.
+
+Responsibilities:
+
+request validation
+
+authentication
+
+schema validation
+
+logging
+
+
+Then we publish an event to SQS.
+
+Flow:
+
+Client
+↓
+Spring Boot API
+↓
+SQS Queue
+
+Why SQS?
+
+Because metadata ingestion can be very high volume.
+
+
+---
+
+3. Message queue processing
+
+Now the system becomes asynchronous.
+
+Your explanation:
+
+Instead of processing everything synchronously in the API, we push events to Amazon SQS. This decouples the ingestion layer from the processing layer and helps us handle spikes in traffic without overloading backend services.Flow:
+
+API
+↓
+SQS Queue
+↓
+Consumer service
+
+
+---
+
+4. Batch / worker processing
+
+Now the worker service processes messages.
+
+Example tasks:
+
+metadata validation
+
+format transformation
+
+enrichment
+
+asset verification
+
+
+Flow:
+
+SQS
+↓
+Batch Worker (Spring Boot)
+↓
+Process metadata
+
+In some cases AWS Lambda also processes events.
+
+Example:
+
+SQS
+↓
+Lambda
+↓
+Trigger downstream system
+
+
+---
+
+5. Database storage
+
+After validation the data goes to databases.
+
+Example:
+
+Worker Service
+↓
+MySQL / PostgreSQL / DynamoDB
+
+Stored data includes:
+
+content metadata
+
+availability schedule
+
+asset mapping
+
+
+
+---
+
+6. Event notification using SNS
+
+Once processing completes we publish events.
+
+Example:
+
+CONTENT_PROCESSED
+
+Flow:
+
+Worker
+↓
+SNS
+↓
+Multiple subscribers
+
+Subscribers might be:
+
+analytics service
+
+notification service
+
+recommendation service
+
+
+
+---
+
+7. Final system flow (simple version)
+
+This is the diagram you can explain in interviews.
+
+Content Provider
+        ↓
+API Layer (Spring Boot / FastAPI)
+        ↓
+Amazon SQS
+        ↓
+Worker / Batch Processor
+        ↓
+Metadata Validation + Transformation
+        ↓
+Database Storage
+        ↓
+SNS Event Notification
+        ↓
+Downstream Systems
+
+
+---
+
+8. Why this architecture is used
+
+Interviewers love this answer.
+
+Benefits:
+
+1. Decoupling
+
+API layer and processing layer are independent.
+
+2. Scalability
+
+Queue absorbs spikes in ingestion.
+
+3. Fault tolerance
+
+Messages are retried automatically.
+
+4. Event driven architecture
+
+Multiple systems react to events.
+
+
+---
+
+9. Important line to say (interview trick)
+
+Say this once and it sounds very senior:
+
+We designed the system using an event driven architecture where APIs handle ingestion and publish events to SQS, and worker services asynchronously process those events. This allowed us to scale ingestion independently from processing and improved system resilience.
+---
+
+10. If interviewer asks where Lambda is used
+
+Answer like this:
+
+Lambda is used for:
+
+lightweight event processing
+
+triggering downstream workflows
+
+automation scripts
+
+data validation tasks
+
+
+Example flow:
+
+SQS
+↓
+Lambda
+↓
+Trigger content pipeline
+
+
+---
+
+11. If interviewer asks how scaling works
+
+Answer:
+
+SQS queue depth increases → more worker instances are spawned.
+
+Example:
+
+High traffic
+↓
+Queue size increases
+↓
+Auto scaling worker services
+↓
+Messages processed faster
+
+
+---
+
+12. If interviewer asks what problems SQS solved
+
+You can say:
+
+Before using queues:
+
+API → heavy processing → slow response
+
+After SQS:
+
+API → Queue → Worker
+
+Result:
+
+faster API response
+
+better scalability
+
+failure retry support
+
+
+
+---
+
+13. One powerful one-minute architecture answer
+
+You can literally speak this.
+
+In our system content providers send metadata through REST APIs built using Spring Boot and FastAPI. Instead of processing the metadata synchronously, the API publishes events to Amazon SQS. This allows us to decouple ingestion from processing and handle high volume traffic.
+
+Worker services consume messages from SQS and perform metadata validation, transformation, and enrichment. After processing, the data is stored in internal databases and events are published through SNS so that other systems like analytics or recommendation services can react to those updates.
+
+This event driven architecture helped us build a scalable and fault tolerant ingestion pipeline for large scale content processing.
+---
+
+If you want, I can also give you the 15 most dangerous Spring Boot + AWS questions interviewers ask at 4–5 years experience (these are the ones that eliminate candidates).
